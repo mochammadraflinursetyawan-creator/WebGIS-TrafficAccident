@@ -86,6 +86,8 @@ DIY_LOCATIONS = {
     "dlingo": (-7.9200, 110.4700, "Dlingo, Bantul"),
     "srandakan": (-7.9430, 110.2580, "Srandakan, Bantul"),
     "jalan parangtritis km 7": (-7.8632, 110.3629, "Jl. Parangtritis KM 7, Sewon, Bantul"),
+    "jalan parangtritis km 9": (-7.8650, 110.3550, "Jalan Parangtritis KM 9, Timbulharjo, Sewon, Bantul (perkiraan ruas)"),
+    "parangtritis km 9": (-7.8650, 110.3550, "Jalan Parangtritis KM 9, Timbulharjo, Sewon, Bantul (perkiraan ruas)"),
     "jalan parangtritis km 10": (-7.8664525, 110.3520141, "Jalan Parangtritis KM 10, Timbulharjo, Sewon, Bantul (perkiraan ruas)"),
     "parangtritis km 10": (-7.8664525, 110.3520141, "Jalan Parangtritis KM 10, Timbulharjo, Sewon, Bantul (perkiraan ruas)"),
     "jalan bantul km 5": (-7.8285, 110.3541, "Jl. Bantul KM 5, Dongkelan"),

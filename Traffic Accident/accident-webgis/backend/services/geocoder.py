@@ -17,7 +17,7 @@ GENERAL_LOCATION_NAMES = {
 
 LOCATION_PATTERNS = [
     # Pola: di/dekat/sekitar/depan/lokasi/area/lewat Jl. Kaliurang / nologaten / selokan mataram / balaiyasa
-    r"(?:di|dekat|sekitar|depan|area|seputar|arah|kawasan|lokasi|loaksi|lewat|pas)\s+((?:jl\.?|jalan|ring\s*road|ringroad|flyover|perempatan|pertigaan|simpang|tugu|pom\s*bensin|pom|spbu|selokan\s*mataram|selokan|jembatan|nologaten|seturan|babarsari|balai\s*yasa|balaiyasa|langensari)\s*[^,.\n]*?)(?=[,\.\n]|arah|kondisi|lalin|korban|sudah|pukul|kejadian|ada|\Z)",
+    r"(?:di|dj|dekat|sekitar|depan|area|seputar|arah|kawasan|lokasi|loaksi|lewat|pas)\s+((?:jl\.?|jalan|ring\s*road|ringroad|flyover|perempatan|pertigaan|simpang|tugu|pom\s*bensin|pom|spbu|selokan\s*mataram|selokan|jembatan|nologaten|seturan|babarsari|balai\s*yasa|balaiyasa|langensari)\s*[^,.\n]*?)(?=[,\.\n]|arah|kondisi|lalin|korban|sudah|pukul|kejadian|ada|\Z)",
     # Pola langsung: Ring Road Utara / Nologaten / Selokan Mataram / Balai Yasa
     r"\b((?:ring\s*road|ringroad|flyover|simpang|perempatan|jalan|jl\.|selokan\s*mataram|nologaten|seturan|babarsari|balai\s*yasa|balaiyasa|langensari)[a-zA-Z0-9\s]*?)(?=[,\.\n]|arah|kondisi|lalin|korban|sudah|pukul|kejadian|ada|\Z)"
 ]
@@ -33,7 +33,7 @@ class GeocodingService:
         cleaned = re.sub(r"\b(?:tadi\s+pagi|siang\s+ini|sore\s+ini|malam\s+ini|barusan|wib)\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\b(?:kronologi|blm|belum|diketahui|mohon|samarkan|akun|saya|min|toko|tokonya|tempat)\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"[&]", " and ", cleaned)
-        cleaned = re.sub(r"^(?:di|dekat|sekitar|depan|arah|pas|lewat|seputar|lokasi|area|kawasan|ke|menuju)\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^(?:di|dj|dekat|sekitar|depan|arah|pas|lewat|seputar|lokasi|area|kawasan|ke|menuju)\s+", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,.-")
         return cleaned
 

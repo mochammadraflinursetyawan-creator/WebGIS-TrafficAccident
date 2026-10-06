@@ -14,29 +14,47 @@ logger = logging.getLogger("TwitterCrawler")
 
 
 def extract_tweet_media(article) -> List[Dict[str, str]]:
-    """Extract attached tweet photos while excluding profile/avatar images."""
+    """Extract attached tweet photos and CCTV/video thumbnails while excluding profile/avatar images."""
+    media = []
+    seen_urls = set()
+
+    # 1. Foto statis tweet
     try:
         images = article.find_elements(
             "css selector", '[data-testid="tweetPhoto"] img'
         )
+        for image in images:
+            image_url = image.get_attribute("src") or image.get_attribute("currentSrc")
+            if not image_url or image_url in seen_urls:
+                continue
+
+            parsed_url = urlparse(image_url)
+            if parsed_url.scheme != "https" or parsed_url.hostname != "pbs.twimg.com":
+                continue
+            if "profile_images" in parsed_url.path:
+                continue
+
+            seen_urls.add(image_url)
+            media.append({"url": image_url, "alt_text": image.get_attribute("alt") or ""})
     except Exception:
-        return []
+        pass
 
-    media = []
-    seen_urls = set()
-    for image in images:
-        image_url = image.get_attribute("src") or image.get_attribute("currentSrc")
-        if not image_url or image_url in seen_urls:
-            continue
+    # 2. Thumbnail / poster video CCTV (misal rekaman cctv laka)
+    try:
+        videos = article.find_elements("css selector", "video")
+        for video in videos:
+            poster_url = video.get_attribute("poster")
+            if not poster_url or poster_url in seen_urls:
+                continue
 
-        parsed_url = urlparse(image_url)
-        if parsed_url.scheme != "https" or parsed_url.hostname != "pbs.twimg.com":
-            continue
-        if "profile_images" in parsed_url.path:
-            continue
+            parsed_url = urlparse(poster_url)
+            if parsed_url.scheme != "https" or parsed_url.hostname != "pbs.twimg.com":
+                continue
 
-        seen_urls.add(image_url)
-        media.append({"url": image_url, "alt_text": image.get_attribute("alt") or ""})
+            seen_urls.add(poster_url)
+            media.append({"url": poster_url, "alt_text": "Rekaman CCTV / Video Laka"})
+    except Exception:
+        pass
 
     return media
 
