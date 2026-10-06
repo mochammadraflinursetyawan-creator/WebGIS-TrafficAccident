@@ -118,6 +118,14 @@ DIY_LOCATIONS = {
     "tanjungsari": (-8.0670, 110.6500, "Tanjungsari, Gunungkidul"),
     "nglipar": (-7.9120, 110.6200, "Nglipar, Gunungkidul"),
     "jalan wonosari": (-7.8250, 110.4350, "Jl. Wonosari, Piyungan"),
+
+    # Sleman Timur / Ngemplak / Beteng
+    "perempatan ngemplak": (-7.7050, 110.4420, "Perempatan Ngemplak, Widodomartani, Sleman"),
+    "perempatan ngemplak /beteng": (-7.7050, 110.4420, "Perempatan Ngemplak / Beteng, Widodomartani, Sleman"),
+    "perempatan ngemplak / beteng": (-7.7050, 110.4420, "Perempatan Ngemplak / Beteng, Widodomartani, Sleman"),
+    "perempatan ngemplak/beteng": (-7.7050, 110.4420, "Perempatan Ngemplak / Beteng, Widodomartani, Sleman"),
+    "perempatan beteng": (-7.7050, 110.4420, "Perempatan Beteng, Ngemplak, Sleman"),
+    "beteng ngemplak": (-7.7050, 110.4420, "Beteng, Ngemplak, Sleman"),
 }
 
 DIY_LOCATION_ACCURACY = {
@@ -129,4 +137,57 @@ DIY_LOCATION_ACCURACY = {
     "jalan ring road barat": ("ESTIMATED", 3000),
     "jalan parangtritis km 10": ("ESTIMATED", 500),
     "parangtritis km 10": ("ESTIMATED", 500),
+    "perempatan ngemplak": ("HIGH", 150),
+    "perempatan ngemplak /beteng": ("HIGH", 150),
+    "perempatan beteng": ("HIGH", 150),
 }
+
+import json
+from pathlib import Path
+
+LEARNED_LANDMARKS_FILE = Path(__file__).resolve().parent / "learned_landmarks.json"
+
+def load_learned_landmarks():
+    """Memuat kamus landmark yang telah dipelajari/dikoreksi oleh petugas."""
+    if LEARNED_LANDMARKS_FILE.exists():
+        try:
+            with open(LEARNED_LANDMARKS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for alias, val in data.items():
+                    DIY_LOCATIONS[alias.lower()] = (val["lat"], val["lon"], val["display_name"])
+                    DIY_LOCATION_ACCURACY[alias.lower()] = (val.get("precision", "HIGH"), val.get("radius", 150))
+        except Exception:
+            pass
+
+def register_learned_landmark(alias: str, lat: float, lon: float, display_name: str, precision: str = "HIGH", radius: int = 150):
+    """Menyimpan lokasi hasil koreksi petugas ke kamus memori permanen agar tidak salah lagi."""
+    alias_clean = alias.strip().lower()
+    if not alias_clean or len(alias_clean) < 3:
+        return
+    DIY_LOCATIONS[alias_clean] = (lat, lon, display_name)
+    DIY_LOCATION_ACCURACY[alias_clean] = (precision, radius)
+
+    current_data = {}
+    if LEARNED_LANDMARKS_FILE.exists():
+        try:
+            with open(LEARNED_LANDMARKS_FILE, "r", encoding="utf-8") as f:
+                current_data = json.load(f)
+        except Exception:
+            current_data = {}
+
+    current_data[alias_clean] = {
+        "lat": lat,
+        "lon": lon,
+        "display_name": display_name,
+        "precision": precision,
+        "radius": radius
+    }
+
+    try:
+        with open(LEARNED_LANDMARKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(current_data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+# Inisialisasi awal
+load_learned_landmarks()

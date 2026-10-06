@@ -17,7 +17,8 @@ from backend.schemas import (
     CommentCreate,
     CommentResponse,
     ReviewCreate,
-    ReviewResponse
+    ReviewResponse,
+    AccidentLocationUpdate
 )
 from backend.seed_data import seed_database
 from backend.services.media import MEDIA_DIR
@@ -165,6 +166,54 @@ def review_accident(accident_id: int, review_in: ReviewCreate, db: Session = Dep
     acc.status = decision
     if decision == "VERIFIED":
         acc.confidence = 1.0
+
+    db.commit()
+    db.refresh(acc)
+    return acc
+
+@app.patch("/api/accidents/{accident_id}/location", response_model=AccidentDetail)
+def update_accident_location(
+    accident_id: int,
+    loc_in: AccidentLocationUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Koreksi titik koordinat & lokasi kejadian oleh Petugas/Moderator.
+    Secara otomatis mencatat koreksi ke kamus auto-learning agar sistem cerdas mengingatnya.
+    """
+    acc = db.query(Accident).filter(Accident.accident_id == accident_id).first()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Accident event not found")
+
+    acc.latitude = loc_in.latitude
+    acc.longitude = loc_in.longitude
+    if loc_in.location_text and loc_in.location_text.strip():
+        acc.location_text = loc_in.location_text.strip()
+    acc.precision = "HIGH"
+    acc.uncertainty_radius = 100
+    acc.status = "VERIFIED"
+    acc.confidence = 1.0
+
+    # Catat audit review
+    review_record = Review(
+        accident_id=acc.accident_id,
+        reviewer_name="Petugas (Koreksi Lokasi)",
+        decision="VERIFIED",
+        notes=loc_in.notes or f"Lokasi dikoreksi ke: {acc.location_text} [{acc.latitude}, {acc.longitude}]"
+    )
+    db.add(review_record)
+
+    # Simpan ke kamus auto-learning
+    if loc_in.save_as_landmark and acc.location_text:
+        from backend.services.landmarks import register_learned_landmark
+        register_learned_landmark(
+            alias=acc.location_text,
+            lat=acc.latitude,
+            lon=acc.longitude,
+            display_name=acc.location_text,
+            precision="HIGH",
+            radius=100
+        )
 
     db.commit()
     db.refresh(acc)

@@ -45,6 +45,13 @@ class AccidentMediaResponse(BaseModel):
     media_url: str
     alt_text: Optional[str] = None
 
+class AccidentLocationUpdate(BaseModel):
+    latitude: float
+    longitude: float
+    location_text: Optional[str] = None
+    save_as_landmark: bool = True
+    notes: Optional[str] = None
+
 # Schema untuk Input Laporan Kecelakaan (Manual Report)
 class AccidentCreate(BaseModel):
     event_date: date

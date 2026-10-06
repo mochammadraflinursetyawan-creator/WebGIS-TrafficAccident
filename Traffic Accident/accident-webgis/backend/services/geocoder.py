@@ -59,10 +59,21 @@ class GeocodingService:
         return bool(location_tokens & candidate_tokens)
 
     def extract_location_text(self, text: str) -> Optional[str]:
-        text_clean = text.strip()
+        # 1. Hapus hashtag (#Jogja, #Yogyakarta, dll) dan mention (@Merapi_Uncover) agar tidak menipu parser
+        text_without_tags = re.sub(r"[#@][a-zA-Z0-9_]+", " ", text).strip()
+        text_clean = re.sub(r"\s+", " ", text_without_tags)
         text_lower = text_clean.lower()
 
-        # Prioritas 0: Cek apakah nama landmark populer ada di teks mentah
+        # 2. Prioritas 1: Pola preposisi langsung (di / dekat / perempatan / pertigaan dll)
+        for pattern in LOCATION_PATTERNS:
+            match = re.search(pattern, text_clean, re.IGNORECASE)
+            if match:
+                loc = match.group(1).strip()
+                loc = self.clean_location_noise(loc)
+                if len(loc) >= 4 and loc.lower() not in GENERAL_LOCATION_NAMES:
+                    return loc
+
+        # 3. Prioritas 2: Cek apakah nama landmark spesifik DIY ada di badan cuitan (bukan nama generik)
         matched_landmarks = [
             landmark for landmark in YOGYA_LOCATIONS if landmark in text_lower
         ]
@@ -71,15 +82,13 @@ class GeocodingService:
                 landmark for landmark in matched_landmarks
                 if landmark not in GENERAL_LOCATION_NAMES
             ]
-            return max(specific_matches or matched_landmarks, key=len)
+            if specific_matches:
+                return max(specific_matches, key=len)
 
-        for pattern in LOCATION_PATTERNS:
-            match = re.search(pattern, text_clean, re.IGNORECASE)
-            if match:
-                loc = match.group(1).strip()
-                loc = self.clean_location_noise(loc)
-                if len(loc) >= 4:
-                    return loc
+        # 4. Fallback jika hanya nama area umum yang ditemukan
+        if matched_landmarks:
+            return max(matched_landmarks, key=len)
+
         return None
 
     def geocode(self, location_text: str) -> Tuple[float, float, str, str, int]:

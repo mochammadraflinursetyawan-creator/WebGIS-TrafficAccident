@@ -204,9 +204,27 @@
             <div class="moderator-heading">Panel Tindakan Petugas</div>
             <span id="officerStatusTag" class="officer-status-tag">Petugas Terverifikasi</span>
           </div>
-          <div class="mod-btn-group" id="modButtonGroup" style="display: flex; gap: 8px;">
+          <div class="mod-btn-group" id="modButtonGroup" style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="btn-mod btn-mod-verify" id="btnModVerify" onclick="handleModeratorDecision('VERIFIED')">✓ Verifikasi Laporan</button>
             <button type="button" class="btn-mod btn-mod-reject" id="btnModReject" onclick="handleModeratorDecision('REJECTED')">✕ Tandai Hoax</button>
+            <button type="button" class="btn-mod" id="btnModCorrectLoc" onclick="startLocationCorrection()" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">✏️ Koreksi Posisi di Peta</button>
+          </div>
+
+          <!-- FORM KOREKSI POSISI INTERAKTIF (HUMAN-IN-THE-LOOP & AUTO-LEARN) -->
+          <div id="locCorrectionPanel" style="display: none; margin-top: 10px; padding: 10px; background: rgba(37, 99, 235, 0.08); border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.3);">
+            <div style="font-size: 0.76rem; font-weight: 700; color: #1d4ed8; margin-bottom: 6px;">📍 Geser marker di peta atau klik titik baru:</div>
+            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+              <input type="text" id="editLocLat" class="form-input" placeholder="Latitude" readonly style="font-size:0.72rem; flex:1;">
+              <input type="text" id="editLocLng" class="form-input" placeholder="Longitude" readonly style="font-size:0.72rem; flex:1;">
+            </div>
+            <input type="text" id="editLocText" class="form-input" placeholder="Nama Jalan / Patokan sebenarnya..." style="font-size:0.75rem; width:100%; margin-bottom: 6px;">
+            <label style="font-size: 0.72rem; color: #334155; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" id="checkLearnLandmark" checked style="accent-color: #2563eb;"> <strong>Simpan ke kamus cerdas (Auto-Learn)</strong> agar lokasi ini otomatis diingat sistem
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-primary" onclick="saveLocationCorrection()" style="flex:1; padding:6px; font-size:0.75rem; background:#10b981; border:none; color:white; border-radius:5px; cursor:pointer;">💾 Simpan Posisi Baru</button>
+              <button type="button" class="btn-secondary" onclick="cancelLocationCorrection()" style="padding:6px 10px; font-size:0.75rem; border-radius:5px; cursor:pointer;">Batal</button>
+            </div>
           </div>
           <div id="modActionFeedback" style="display: none; margin-top: 8px; font-size: 0.74rem; padding: 8px 10px; border-radius: 6px; text-align: center;"></div>
         </div>

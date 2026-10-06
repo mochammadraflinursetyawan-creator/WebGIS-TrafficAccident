@@ -62,6 +62,17 @@ const api = {
     return await res.json();
   },
 
+  // Koreksi Titik Lokasi Kejadian oleh Petugas + Auto-Learning
+  async updateLocation(accidentId, payload) {
+    const res = await fetch(`${API_BASE}/accidents/${accidentId}/location`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Gagal menyimpan koreksi lokasi kejadian");
+    return await res.json();
+  },
+
   // SLICE 4: Kirim Komentar Warga
   async submitComment(accidentId, commentData) {
     const res = await fetch(`${API_BASE}/accidents/${accidentId}/comments`, {

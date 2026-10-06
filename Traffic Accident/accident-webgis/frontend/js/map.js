@@ -9,6 +9,8 @@ let isPickingLocation = false;
 let tempPickMarker = null;
 let currentAccidentId = null;
 let isRefreshingData = false;
+let isCorrectingLocation = false;
+let correctionMarker = null;
 
 // Mode Petugas: default false (Mode Warga / Viewer)
 let isOfficerMode = sessionStorage.getItem("webgis_officer_mode") === "true";
@@ -388,6 +390,128 @@ async function handleModeratorDecision(decision) {
   } finally {
     if (btnVerify) btnVerify.disabled = false;
     if (btnReject) btnReject.disabled = false;
+  }
+}
+
+// -------------------------------------------------------------
+// 4b. Interactive Location Correction & Auto-Learning (Human-in-the-Loop)
+// -------------------------------------------------------------
+function startLocationCorrection() {
+  if (!isOfficerMode) {
+    alert("Akses Ditolak: Hanya Petugas yang dapat mengoreksi posisi lokasi kejadian.");
+    return;
+  }
+  if (!currentAccidentId) return;
+
+  const currentAcc = allAccidentsData.find(a => a.properties.accident_id === currentAccidentId);
+  if (!currentAcc) return;
+
+  const [lng, lat] = currentAcc.geometry.coordinates;
+
+  const panel = document.getElementById("locCorrectionPanel");
+  if (panel) panel.style.display = "block";
+
+  document.getElementById("editLocLat").value = lat.toFixed(6);
+  document.getElementById("editLocLng").value = lng.toFixed(6);
+  document.getElementById("editLocText").value = currentAcc.properties.location_text || "";
+
+  // Buat marker khusus yang dapat digeser (draggable)
+  if (correctionMarker) {
+    map.removeLayer(correctionMarker);
+  }
+
+  isCorrectingLocation = true;
+  correctionMarker = L.marker([lat, lng], {
+    draggable: true,
+    zIndexOffset: 1500
+  }).addTo(map);
+
+  correctionMarker.bindPopup("<b>Geser saya</b> ke titik lokasi jalan yang sebenarnya!").openPopup();
+
+  correctionMarker.on("dragend", function(e) {
+    const pos = e.target.getLatLng();
+    document.getElementById("editLocLat").value = pos.lat.toFixed(6);
+    document.getElementById("editLocLng").value = pos.lng.toFixed(6);
+  });
+
+  // Izinkan juga klik langsung pada peta untuk memindahkan posisi marker koreksi
+  map.on("click", onMapCorrectionClick);
+
+  map.setView([lat, lng], 15);
+}
+
+function onMapCorrectionClick(e) {
+  if (isCorrectingLocation && correctionMarker) {
+    correctionMarker.setLatLng(e.latlng);
+    document.getElementById("editLocLat").value = e.latlng.lat.toFixed(6);
+    document.getElementById("editLocLng").value = e.latlng.lng.toFixed(6);
+  }
+}
+
+function cancelLocationCorrection() {
+  isCorrectingLocation = false;
+  if (correctionMarker) {
+    map.removeLayer(correctionMarker);
+    correctionMarker = null;
+  }
+  map.off("click", onMapCorrectionClick);
+  const panel = document.getElementById("locCorrectionPanel");
+  if (panel) panel.style.display = "none";
+}
+
+async function saveLocationCorrection() {
+  if (!currentAccidentId) return;
+
+  const lat = parseFloat(document.getElementById("editLocLat").value);
+  const lng = parseFloat(document.getElementById("editLocLng").value);
+  const locText = document.getElementById("editLocText").value.trim();
+  const learn = document.getElementById("checkLearnLandmark").checked;
+
+  if (isNaN(lat) || isNaN(lng)) {
+    alert("Koordinat tidak valid! Silakan geser marker atau klik pada peta.");
+    return;
+  }
+
+  try {
+    const feedback = document.getElementById("modActionFeedback");
+    if (feedback) {
+      feedback.style.display = "block";
+      feedback.style.background = "rgba(37, 99, 235, 0.15)";
+      feedback.style.color = "#2563eb";
+      feedback.innerHTML = "Sedang menyimpan posisi baru & memperbarui kamus cerdas...";
+    }
+
+    await api.updateLocation(currentAccidentId, {
+      latitude: lat,
+      longitude: lng,
+      location_text: locText || undefined,
+      save_as_landmark: learn
+    });
+
+    cancelLocationCorrection();
+
+    if (feedback) {
+      feedback.style.background = "rgba(16, 185, 129, 0.18)";
+      feedback.style.color = "#10b981";
+      feedback.innerHTML = `✓ Titik lokasi kejadian #${currentAccidentId} berhasil dipindahkan & diingat sistem!`;
+    }
+
+    // Refresh data kejadian & peta seketika
+    await loadAccidents();
+
+    // Update detail info di panel samping
+    if (locText) {
+      document.getElementById("detailLoc").textContent = locText;
+    }
+    const statusEl = document.getElementById("detailStatusBadge");
+    if (statusEl) {
+      statusEl.textContent = "VERIFIED";
+      statusEl.className = "badge-status status-badge-VERIFIED";
+    }
+
+    map.setView([lat, lng], 15);
+  } catch (err) {
+    alert("Gagal mengoreksi lokasi: " + err.message);
   }
 }
 
