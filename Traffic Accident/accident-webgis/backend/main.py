@@ -476,10 +476,19 @@ def trigger_live_crawler(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Mount static frontend jika ada
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
+
+from fastapi.responses import FileResponse
+
+@app.get("/admin")
+def serve_admin():
+    admin_html = os.path.join(frontend_dir, "admin.html")
+    if os.path.exists(admin_html):
+        return FileResponse(admin_html)
+    raise HTTPException(status_code=404, detail="Halaman admin tidak ditemukan")
+
 if os.path.exists(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
