@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & Moderasi — WebGIS Laka DIY</title>
+  
+  <!-- Interface typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/style.css?v=9">
+  <style>
+    /* Styling khusus Dashboard Admin */
+    .admin-badge {
+      background: #dc2626;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+      margin-left: 6px;
+    }
+    .admin-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 66px);
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-sidebar {
+      width: 380px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      z-index: 500;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.03);
+    }
+    .admin-sidebar-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    .admin-queue-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .queue-card {
+      padding: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .queue-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+      transform: translateY(-1px);
+    }
+    .queue-card.active {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+    .queue-card-detected {
+      border-left: 4px solid #ef4444;
+    }
+    .queue-card-verified {
+      border-left: 4px solid #10b981;
+    }
+    .admin-auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .admin-auth-card {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 14px;
+      width: 90%;
+      max-width: 380px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH GUARD OVERLAY (LOGIN PETUGAS) -->
+  <div class="admin-auth-overlay" id="adminAuthOverlay" style="display: flex;">
+    <div class="admin-auth-card">
+      <div style="font-size: 2.2rem; margin-bottom: 10px;">🛡️</div>
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Portal Petugas Laka DIY</h2>
+      <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 20px;">Masukkan PIN otoritas untuk mengakses dashboard verifikasi & koreksi peta.</p>
+      
+      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+        <input type="password" id="adminPinInput" class="form-input" placeholder="Masukkan PIN Petugas" required style="text-align: center; font-size: 1.1rem; letter-spacing: 0.2em; margin-bottom: 14px; padding: 10px;">
+        <button type="submit" class="btn-primary" style="width: 100%; padding: 10px; font-weight: 600;">Buka Dashboard Petugas</button>
+      </form>
+      
+      <div style="margin-top: 18px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+        <a href="/" style="font-size: 0.78rem; color: #64748b; text-decoration: none;">← Kembali ke Portal Publik Warga</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN HEADER -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon" style="background: #dc2626;">ADM</div>
+      <div class="brand-text">
+        <h1 class="brand-title" style="display: flex; align-items: center;">Laka DIY <span class="admin-badge">PORTAL PETUGAS</span></h1>
+        <p class="brand-subtitle">Kendali Verifikasi, Geocoding & Scraping</p>
+      </div>
+    </div>
+
+    <!-- STATS PILL -->
+    <div class="header-stats-pill">
+      <div class="stat-pill-item">
+        <span class="stat-pill-label">Total</span>
+        <span class="stat-pill-val" id="statTotal">0</span>
+      </div>
+      <div class="stat-pill-divider"></div>
+      <div class="stat-pill-item">
+        <span class="stat-pill-dot dot-green"></span>
+        <span class="stat-pill-label">Valid</span>
+        <span class="stat-pill-val val-green" id="statVerified">0</span>
+      </div>
+      <div class="stat-pill-divider"></div>
+      <div class="stat-pill-item">
+        <span class="stat-pill-dot dot-red"></span>
+        <span class="stat-pill-label">Butuh Review</span>
+        <span class="stat-pill-val val-red" id="statDetected">0</span>
+      </div>
+    </div>
+
+    <!-- ADMIN ACTIONS -->
+    <div class="header-actions">
+      <!-- Live Crawler Status -->
+      <div class="poller-pill" id="pollerBadge" onclick="triggerCrawlerScan()" title="Klik untuk memicu pengecekan live Twitter sekarang" style="cursor: pointer;">
+        <span class="pulsing-dot-green"></span>
+        <span id="pollerBadgeText">@Merapi_Uncover: Standby</span>
+      </div>
+
+      <button type="button" class="btn-hdr btn-hdr-dark" onclick="triggerCrawlerScan()" id="btnScanTwitter" title="Jalankan scraping Twitter secara manual">
+        <span>🔄 Scan Twitter</span>
+      </button>
+
+      <button type="button" class="btn-hdr btn-hdr-dark" onclick="openSimulatorModal()">
+        <span>🧪 Simulasi Cuitan</span>
+      </button>
+
+      <button type="button" class="btn-hdr btn-hdr-dark" onclick="openAnalyticsModal()">
+        <span>📊 Analitik</span>
+      </button>
+
+      <a href="/" target="_blank" class="btn-hdr btn-hdr-accent" style="text-decoration: none;" title="Buka tampilan peta publik">
+        <span>Portal Publik ↗</span>
+      </a>
+
+      <button type="button" class="btn-hdr btn-hdr-officer" onclick="handleAdminLogout()" style="background: #ef4444; color: white;">
+        <span>Keluar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ADMIN SPLIT LAYOUT -->
+  <div class="admin-layout">
+    
+    <!-- LEFT SIDEBAR: ANTREAN KEJADIAN -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h2 style="font-size: 0.88rem; font-weight: 700; color: #1e293b;">Antrean Laporan & Cuitan</h2>
+          <span style="font-size: 0.72rem; color: #64748b;" id="queueCount">0 Laporan</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-secondary" id="filterTabAll" onclick="filterAdminQueue('ALL')" style="flex: 1; padding: 4px; font-size: 0.7rem; font-weight: 600;">Semua</button>
+          <button type="button" class="btn-primary" id="filterTabDetected" onclick="filterAdminQueue('DETECTED')" style="flex: 1.2; padding: 4px; font-size: 0.7rem; font-weight: 600; background: #ef4444; border:none; color:white;">🚨 Butuh Review</button>
+          <button type="button" class="btn-secondary" id="filterTabVerified" onclick="filterAdminQueue('VERIFIED')" style="flex: 1; padding: 4px; font-size: 0.7rem; font-weight: 600;">✓ Valid</button>
+        </div>
+      </div>
+
+      <!-- LIST ITEM ANTREAN -->
+      <div class="admin-queue-list" id="adminQueueList">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
+    <!-- CENTER: PETA WEBGIS -->
+    <main style="flex: 1; position: relative; height: 100%;">
+      <div id="map" style="width: 100%; height: 100%;"></div>
+
+      <!-- FLOATING TIMELINE FILTER -->
+      <div class="timeline-bar" style="bottom: 20px; z-index: 400;">
+        <span class="timeline-meta" id="timelineMeta">Data Aktif Real-Time</span>
+        <button type="button" class="btn-secondary" onclick="loadAdminAccidents()" style="padding: 4px 10px; font-size: 0.72rem;">🔄 Segarkan Peta</button>
+      </div>
+    </main>
+
+    <!-- RIGHT: DRAWER INSPEKSI & MODERASI PETUGAS -->
+    <aside class="detail-drawer" id="detailDrawer" style="display: none; z-index: 600;">
+      <div class="drawer-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge-status" id="detailStatusBadge">DETECTED</span>
+          <span style="font-size: 0.74rem; color: #64748b;" id="detailSourceType">Twitter</span>
+        </div>
+        <button class="detail-close-btn" onclick="closeDetailDrawer()">&times;</button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="detail-item">
+          <h2 id="detailTitle" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 4px;">Kecelakaan</h2>
+          <div class="detail-meta">
+            <span id="detailLoc">Lokasi Kejadian</span>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-mini-card">
+            <span class="mini-card-label">Waktu Kejadian</span>
+            <span class="mini-card-val" id="detailDateTime">-</span>
+          </div>
+          <div class="detail-mini-card">
+            <span class="mini-card-label">Tingkat Akurasi</span>
+            <span class="mini-card-val" id="detailPrecision">HIGH (150m)</span>
+          </div>
+        </div>
+
+        <!-- CUITAN ASLI -->
+        <div class="detail-item">
+          <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Teks Cuitan Warga / Sumber</span>
+          <div class="incident-quote">
+            <p id="detailDesc" class="incident-quote-text"></p>
+          </div>
+        </div>
+
+        <!-- FOTO LAPORAN -->
+        <section class="incident-media-section" id="detailMediaSection" aria-label="Foto laporan" hidden>
+          <h3 class="incident-media-heading">Foto Rekaman / CCTV</h3>
+          <div class="incident-media-grid" id="detailMedia"></div>
+        </section>
+
+        <!-- PANEL TINDAKAN PETUGAS -->
+        <div class="moderator-box" style="background: rgba(37, 99, 235, 0.05); border: 1px dashed rgba(37, 99, 235, 0.4); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="moderator-heading" style="color: #1e40af; font-weight: 700;">Tindakan Moderator</div>
+            <span class="officer-status-tag" style="background: #2563eb; color: white;">Petugas Terverifikasi</span>
+          </div>
+
+          <div class="mod-btn-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn-mod btn-mod-verify" id="btnModVerify" onclick="handleAdminModeratorDecision('VERIFIED')" style="background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✓ Verifikasi Laporan</button>
+            <button type="button" class="btn-mod btn-mod-reject" id="btnModReject" onclick="handleAdminModeratorDecision('REJECTED')" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✕ Tandai Hoax</button>
+            <button type="button" class="btn-mod" id="btnModCorrectLoc" onclick="startLocationCorrection()" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✏️ Koreksi Posisi di Peta</button>
+          </div>
+
+          <!-- FORM KOREKSI POSISI INTERAKTIF (HUMAN-IN-THE-LOOP & AUTO-LEARN) -->
+          <div id="locCorrectionPanel" style="display: none; margin-top: 12px; padding: 12px; background: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.04);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #1e40af; margin-bottom: 8px;">📍 Geser marker pin di peta atau klik titik baru:</div>
+            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+              <input type="text" id="editLocLat" class="form-input" placeholder="Latitude" readonly style="font-size:0.72rem; flex:1;">
+              <input type="text" id="editLocLng" class="form-input" placeholder="Longitude" readonly style="font-size:0.72rem; flex:1;">
+            </div>
+            <input type="text" id="editLocText" class="form-input" placeholder="Nama Jalan / Patokan sebenarnya..." style="font-size:0.75rem; width:100%; margin-bottom: 8px;">
+            <label style="font-size: 0.72rem; color: #334155; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; cursor: pointer;">
+              <input type="checkbox" id="checkLearnLandmark" checked style="accent-color: #2563eb;"> <strong>Simpan ke kamus cerdas (Auto-Learn)</strong> agar lokasi ini otomatis diingat sistem
+            </label>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-primary" onclick="saveLocationCorrection()" style="flex:1; padding:7px; font-size:0.75rem; background:#10b981; border:none; color:white; border-radius:5px; cursor:pointer;">💾 Simpan Posisi Baru</button>
+              <button type="button" class="btn-secondary" onclick="cancelLocationCorrection()" style="padding:7px 12px; font-size:0.75rem; border-radius:5px; cursor:pointer;">Batal</button>
+            </div>
+          </div>
+
+          <div id="modActionFeedback" style="display: none; margin-top: 10px; font-size: 0.74rem; padding: 8px 10px; border-radius: 6px; text-align: center;"></div>
+        </div>
+
+        <!-- COMMENTS / DISKUSI -->
+        <div class="comments-section" style="margin-top: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 600; display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span>Laporan & Catatan Situasi Warga</span>
+            <span style="font-size: 0.7rem; color: #64748b;">Crowdsourced</span>
+          </div>
+          <div class="comment-list" id="commentList"></div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- SIMULATOR MODAL (SLICE 6) -->
+  <div class="modal-overlay" id="simulatorModal">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem;">🧪 Simulator Ingestion Twitter/X (@Merapi_Uncover)</h3>
+        <button class="detail-close-btn" onclick="closeSimulatorModal()">&times;</button>
+      </div>
+      <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 12px;">Uji coba ketahanan NLP dan Geocoding terhadap cuitan warga tanpa harus menunggu tweet asli.</p>
+      
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 0.74rem; font-weight: 600;">Contoh Skenario Cuitan:</label>
+        <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+          <button type="button" class="btn-secondary" onclick="pickSampleTweet(0)" style="font-size: 0.7rem; padding: 4px 8px;">Laka Kaliurang KM 14</button>
+          <button type="button" class="btn-secondary" onclick="pickSampleTweet(1)" style="font-size: 0.7rem; padding: 4px 8px;">Truk Ring Road Barat</button>
+          <button type="button" class="btn-secondary" onclick="pickSampleTweet(2)" style="font-size: 0.7rem; padding: 4px 8px;">Info Pohon Tumbang (Non-Laka)</button>
+        </div>
+      </div>
+
+      <textarea id="simTweetInput" class="form-input" rows="3" placeholder="Ketik atau tempel teks cuitan di sini..." style="width: 100%; font-size: 0.8rem; margin-bottom: 10px;"></textarea>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn-secondary" onclick="closeSimulatorModal()">Tutup</button>
+        <button type="button" class="btn-primary" onclick="executeTweetSimulation()">Proses Ingestion</button>
+      </div>
+
+      <div id="simResultBox" style="display: none; margin-top: 14px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.76rem;">
+        <div style="font-weight: 700; margin-bottom: 4px;" id="simStatus">Status: -</div>
+        <div id="simDetail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS MODAL -->
+  <div class="modal-overlay" id="analyticsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem;">📊 Analitik Laka Lantas DIY</h3>
+        <button class="detail-close-btn" onclick="closeAnalyticsModal()">&times;</button>
+      </div>
+      <div id="analyticsBody" style="font-size: 0.8rem; color: #334155; line-height: 1.6;">
+        <p>Memuat statistik insiden...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS & Plugins -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- App Services -->
+  <script src="js/api.js?v=9"></script>
+  <script src="js/admin.js?v=9"></script>
+</body>
+</html>

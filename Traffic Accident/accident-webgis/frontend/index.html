@@ -57,29 +57,19 @@
       </div>
     </div>
 
-    <!-- RIGHT: ACTION BUTTONS -->
+    <!-- RIGHT: ACTION BUTTONS (PORTAL PUBLIK) -->
     <div class="header-actions">
-      <!-- Live Poller Badge -->
-      <div class="poller-pill" id="pollerBadge" onclick="openSimulatorModal()" title="Monitoring live timeline @Merapi_Uncover">
-        <span class="pulsing-dot-green"></span>
-        <span id="pollerBadgeText">@Merapi_Uncover: Live</span>
-      </div>
-
       <button type="button" class="btn-hdr btn-hdr-dark" onclick="openAnalyticsModal()">
-        <span>Analitik</span>
-      </button>
-
-      <button type="button" class="btn-hdr btn-hdr-dark" id="btnOpenSimulator" onclick="openSimulatorModal()">
-        <span>Simulasi X</span>
+        <span>📊 Analitik</span>
       </button>
 
       <button type="button" class="btn-hdr btn-hdr-accent" id="btnToggleReport" onclick="toggleReportMode()">
-        <span>+ Buat laporan</span>
+        <span>📢 + Laporkan Laka</span>
       </button>
 
-      <button type="button" class="btn-hdr btn-hdr-officer" id="btnOfficerMode" onclick="toggleOfficerModal()">
-        <span id="officerBtnText">Mode petugas</span>
-      </button>
+      <a href="/admin" class="btn-hdr btn-hdr-officer" style="text-decoration: none;" title="Akses khusus Petugas / Admin">
+        <span>Portal Petugas ↗</span>
+      </a>
     </div>
   </header>
 
@@ -198,36 +188,7 @@
           <div class="incident-media-grid" id="detailMedia"></div>
         </section>
 
-        <!-- MODERATOR ACTIONS (HANYA MUNCUL DI MODE PETUGAS) -->
-        <div class="moderator-box" id="moderatorBox" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div class="moderator-heading">Panel Tindakan Petugas</div>
-            <span id="officerStatusTag" class="officer-status-tag">Petugas Terverifikasi</span>
-          </div>
-          <div class="mod-btn-group" id="modButtonGroup" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button type="button" class="btn-mod btn-mod-verify" id="btnModVerify" onclick="handleModeratorDecision('VERIFIED')">✓ Verifikasi Laporan</button>
-            <button type="button" class="btn-mod btn-mod-reject" id="btnModReject" onclick="handleModeratorDecision('REJECTED')">✕ Tandai Hoax</button>
-            <button type="button" class="btn-mod" id="btnModCorrectLoc" onclick="startLocationCorrection()" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">✏️ Koreksi Posisi di Peta</button>
-          </div>
 
-          <!-- FORM KOREKSI POSISI INTERAKTIF (HUMAN-IN-THE-LOOP & AUTO-LEARN) -->
-          <div id="locCorrectionPanel" style="display: none; margin-top: 10px; padding: 10px; background: rgba(37, 99, 235, 0.08); border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.3);">
-            <div style="font-size: 0.76rem; font-weight: 700; color: #1d4ed8; margin-bottom: 6px;">📍 Geser marker di peta atau klik titik baru:</div>
-            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-              <input type="text" id="editLocLat" class="form-input" placeholder="Latitude" readonly style="font-size:0.72rem; flex:1;">
-              <input type="text" id="editLocLng" class="form-input" placeholder="Longitude" readonly style="font-size:0.72rem; flex:1;">
-            </div>
-            <input type="text" id="editLocText" class="form-input" placeholder="Nama Jalan / Patokan sebenarnya..." style="font-size:0.75rem; width:100%; margin-bottom: 6px;">
-            <label style="font-size: 0.72rem; color: #334155; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; cursor: pointer;">
-              <input type="checkbox" id="checkLearnLandmark" checked style="accent-color: #2563eb;"> <strong>Simpan ke kamus cerdas (Auto-Learn)</strong> agar lokasi ini otomatis diingat sistem
-            </label>
-            <div style="display: flex; gap: 6px;">
-              <button type="button" class="btn-primary" onclick="saveLocationCorrection()" style="flex:1; padding:6px; font-size:0.75rem; background:#10b981; border:none; color:white; border-radius:5px; cursor:pointer;">💾 Simpan Posisi Baru</button>
-              <button type="button" class="btn-secondary" onclick="cancelLocationCorrection()" style="padding:6px 10px; font-size:0.75rem; border-radius:5px; cursor:pointer;">Batal</button>
-            </div>
-          </div>
-          <div id="modActionFeedback" style="display: none; margin-top: 8px; font-size: 0.74rem; padding: 8px 10px; border-radius: 6px; text-align: center;"></div>
-        </div>
 
         <!-- COMMENTS SECTION (SLICE 4) -->
         <div class="comments-section">
@@ -309,100 +270,7 @@
     </div>
   </div>
 
-  <!-- MODAL: SIMULATOR INGESTION MEDSOS X (SLICE 6) -->
-  <div class="modal-overlay" id="simulatorModal">
-    <div class="modal-content" style="width: 520px; max-height: 90vh; overflow-y: auto;">
-      <div class="modal-header">
-        <div>
-          <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-            <span style="color: #f59e0b;">🤖</span> Pipeline Ingestion Medsos (X / Twitter)
-          </h3>
-          <p class="modal-subtitle">Simulasi akun @Merapi_Uncover: NLP, geocoding, dan penyimpanan laporan</p>
-        </div>
-        <button class="detail-close-btn" onclick="closeSimulatorModal()">&times;</button>
-      </div>
 
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="filter-group">
-          <label>Pilih Sampel Tweet Uji Coba:</label>
-          <div style="display: flex; flex-direction: column; gap: 6px;" id="sampleTweetButtons">
-            <!-- Render via JS -->
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <label>Atau Tulis Teks Cuitan Sendiri:</label>
-          <textarea id="simulatorTweetInput" class="form-input" rows="3" placeholder="Tuliskan teks tweet simulasi..."></textarea>
-        </div>
-
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-primary btn-simulate" style="justify-content: center; flex: 1;" onclick="runTweetSimulation()">
-            Uji teks laporan
-          </button>
-          <button class="btn-primary btn-crawl" id="btnLiveCrawler" style="justify-content: center; flex: 1;" onclick="runLiveCrawler()">
-            Ambil laporan terbaru
-          </button>
-        </div>
-
-        <!-- Autonomous Poller Live Monitor -->
-        <div class="poller-status-panel">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong class="poller-status-title">
-              <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-              Pemantauan otomatis (@Merapi_Uncover)
-            </strong>
-            <span class="poller-status-badge" id="pollerStatusLabel">Aktif</span>
-          </div>
-          <div class="poller-status-details">
-            <div>Interval: <strong>Tiap 5 menit</strong></div>
-            <div>Total siklus: <strong id="pollerTotalRuns">0</strong></div>
-            <div class="poller-status-last">Terakhir diperiksa: <span id="pollerLastRun">-</span></div>
-            <div class="poller-status-message" id="pollerLastMsg">Status: Standby (Menunggu siklus)</div>
-          </div>
-        </div>
-
-        <!-- Pipeline Execution Trace / Diagnostic Box -->
-        <div id="pipelineTraceBox" class="pipeline-trace-box" style="display: none; border-radius: 10px; padding: 12px; font-size: 0.76rem; flex-direction: column; gap: 8px;">
-          <div class="pipeline-trace-title">
-            Hasil pemrosesan
-          </div>
-          <div id="traceContent" style="display: flex; flex-direction: column; gap: 6px;"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: LOGIN / KONFIRMASI MODE PETUGAS (FASE 4) -->
-  <div class="modal-overlay" id="officerModal">
-    <div class="modal-content" style="width: 380px;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <h3 style="font-size: 1.05rem; font-weight: 700;">Akses Mode Petugas</h3>
-        </div>
-        <button class="detail-close-btn" onclick="closeOfficerModal()">&times;</button>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <p style="font-size: 0.78rem; color: #536762; line-height: 1.5;">
-          Mode Petugas memberikan otorisasi untuk memverifikasi laporan kejadian, menolak hoax, serta menandai evakuasi laka selesai.
-        </p>
-
-        <form id="officerForm" onsubmit="handleOfficerLogin(event)" style="display: flex; flex-direction: column; gap: 10px;">
-          <div class="filter-group">
-            <label for="officerPinInput" style="font-size: 0.75rem;">Masukkan PIN Keamanan Petugas:</label>
-            <input type="password" id="officerPinInput" class="form-input" placeholder="Masukkan 4 digit PIN..." maxlength="8" required style="font-size: 1rem; font-family: 'IBM Plex Mono', monospace; text-align: center;">
-          </div>
-          <div class="demo-key-note" style="font-size: 0.7rem; padding: 6px 10px; border-radius: 6px;">
-            <strong>Kunci demo:</strong> Masukkan PIN <code>1234</code>
-          </div>
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <button type="button" class="btn-primary officer-cancel-button" style="flex: 1; justify-content: center;" onclick="closeOfficerModal()">Batal</button>
-            <button type="submit" class="btn-primary officer-submit-button" style="flex: 1; justify-content: center;">Masuk</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 
   <!-- MODAL: DASHBOARD ANALISIS SPASIAL & BLACKSPOT (FASE 5) -->
   <div class="modal-overlay" id="analyticsModal">
