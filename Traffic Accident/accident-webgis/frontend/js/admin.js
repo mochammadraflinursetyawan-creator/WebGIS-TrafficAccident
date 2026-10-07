@@ -223,62 +223,90 @@ async function selectAccident(accidentId) {
   const [lng, lat] = feat.geometry.coordinates;
   map.setView([lat, lng], 15);
 
-  document.getElementById("detailDrawer").style.display = "block";
+  const drawer = document.getElementById("detailDrawer");
+  drawer.style.display = "flex";
   document.getElementById("locCorrectionPanel").style.display = "none";
   if (correctionMarker) {
     map.removeLayer(correctionMarker);
     correctionMarker = null;
   }
 
+  // Reset feedback aksi jika ada
+  const feedback = document.getElementById("modActionFeedback");
+  if (feedback) feedback.style.display = "none";
+
   try {
     const data = await api.getAccidentDetail(accidentId);
     
-    document.getElementById("detailTitle").textContent = `${data.accident_type} Accident (#${data.accident_id})`;
-    document.getElementById("detailLoc").textContent = data.location_text;
+    // Header & Info Rows (Persis seperti di Portal Warga)
+    document.getElementById("detailTitle").textContent = `${data.accident_type || 'Traffic'} Accident`;
+    document.getElementById("detailLocation").textContent = data.location_text || "-";
     document.getElementById("detailDateTime").textContent = `${data.event_date} — ${data.event_time}`;
-    document.getElementById("detailPrecision").textContent = `${data.precision || 'HIGH'} (${data.uncertainty_radius || 150}m)`;
-    document.getElementById("detailDesc").textContent = data.description || "Tidak ada deskripsi.";
-    document.getElementById("detailSourceType").textContent = data.source_type ? `Sumber: ${data.source_type}` : "Manual";
+    
+    const detailSource = document.getElementById("detailSource");
+    if (detailSource) {
+      detailSource.textContent = data.source_type === "manual" ? "Laporan Warga Manual" : "X / @Merapi_Uncover";
+    }
 
+    const precEl = document.getElementById("detailPrecision");
+    if (precEl) {
+      precEl.textContent = `${data.precision || 'ESTIMATED'} (${data.uncertainty_radius || 150}m)`;
+    }
+
+    // Teks Cuitan Warga
+    document.getElementById("detailDesc").textContent = data.description || "Tidak ada cuitan.";
+
+    // Status Badge - Standar style badge persis portal publik
     const statusBadge = document.getElementById("detailStatusBadge");
     statusBadge.textContent = data.status;
-    statusBadge.style.background = STATUS_COLORS[data.status] || "#64748b";
-    statusBadge.style.color = "#ffffff";
+    statusBadge.style.background = "";
+    statusBadge.style.color = "";
+    statusBadge.className = `badge-status status-badge-${data.status.replace(' ', '_')}`;
 
-    // Media Foto CCTV
+    // Foto Laporan / Rekaman CCTV (Struktur konsisten dengan portal publik)
     const mediaSection = document.getElementById("detailMediaSection");
     const mediaContainer = document.getElementById("detailMedia");
-    mediaContainer.innerHTML = "";
+    mediaContainer.replaceChildren();
     if (data.media && data.media.length > 0) {
       mediaSection.hidden = false;
-      data.media.forEach(m => {
+      data.media.forEach((m, index) => {
+        const link = document.createElement("a");
+        link.className = "incident-media-link";
+        link.href = m.media_url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.setAttribute("aria-label", `Buka foto laporan ${index + 1} ukuran penuh`);
+
         const img = document.createElement("img");
+        img.className = "incident-media-image";
         img.src = m.media_url;
-        img.alt = m.alt_text || "Foto Laka";
-        img.className = "incident-media-thumb";
-        img.onclick = () => window.open(m.media_url, "_blank");
-        mediaContainer.appendChild(img);
+        img.alt = m.alt_text || `Foto ${index + 1} dari laporan kecelakaan`;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.addEventListener("error", () => link.remove(), { once: true });
+
+        link.appendChild(img);
+        mediaContainer.appendChild(link);
       });
     } else {
       mediaSection.hidden = true;
     }
 
-    // Komentar Warga
+    // Catatan / Komentar Situasi Warga (Desain bubble bersih)
     const commentsList = document.getElementById("commentList");
     commentsList.innerHTML = "";
     if (data.comments && data.comments.length > 0) {
       data.comments.forEach(c => {
         const item = document.createElement("div");
-        item.style.padding = "6px 8px";
-        item.style.background = "#f1f5f9";
-        item.style.borderRadius = "6px";
-        item.style.marginBottom = "4px";
-        item.style.fontSize = "0.75rem";
-        item.innerHTML = `<strong>${c.username}:</strong> ${c.comment_text}`;
+        item.className = "comment-bubble";
+        item.innerHTML = `
+          <div class="comment-user">${c.username || 'Warga'}</div>
+          <div class="comment-text">${c.comment_text}</div>
+        `;
         commentsList.appendChild(item);
       });
     } else {
-      commentsList.innerHTML = `<span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Belum ada update situasi warga.</span>`;
+      commentsList.innerHTML = `<span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Belum ada catatan situasi warga.</span>`;
     }
 
   } catch (err) {
@@ -315,6 +343,15 @@ async function handleAdminModeratorDecision(decision) {
     });
 
     feedback.textContent = `✓ Kejadian #${currentAccidentId} berhasil di-update: ${decision}!`;
+
+    // Perbarui badge seketika
+    const statusBadge = document.getElementById("detailStatusBadge");
+    if (statusBadge) {
+      statusBadge.textContent = decision;
+      statusBadge.style.background = "";
+      statusBadge.style.color = "";
+      statusBadge.className = `badge-status status-badge-${decision.replace(' ', '_')}`;
+    }
 
     await loadAdminAccidents();
     selectAccident(currentAccidentId);
