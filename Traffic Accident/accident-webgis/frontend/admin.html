@@ -219,37 +219,36 @@
     </main>
 
     <!-- RIGHT: DRAWER INSPEKSI & MODERASI PETUGAS -->
-    <aside class="detail-drawer" id="detailDrawer" style="display: none; z-index: 600;">
-      <div class="drawer-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge-status" id="detailStatusBadge">DETECTED</span>
-          <span style="font-size: 0.74rem; color: #64748b;" id="detailSourceType">Twitter</span>
+    <aside class="detail-drawer" id="detailDrawer">
+      <div class="detail-header">
+        <div>
+          <span class="badge-status status-badge-DETECTED" id="detailStatusBadge">DETECTED</span>
+          <h2 id="detailTitle" style="font-size: 1.1rem; margin-top: 6px;">Detail Kecelakaan</h2>
         </div>
         <button class="detail-close-btn" onclick="closeDetailDrawer()">&times;</button>
       </div>
 
-      <div class="drawer-body">
-        <div class="detail-item">
-          <h2 id="detailTitle" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 4px;">Kecelakaan</h2>
-          <div class="detail-meta">
-            <span id="detailLoc">Lokasi Kejadian</span>
-          </div>
+      <div class="detail-body">
+        <div class="detail-info-row">
+          <span>Lokasi</span>
+          <span id="detailLocation" style="text-align: right; max-width: 60%;">Lokasi Kejadian</span>
+        </div>
+        <div class="detail-info-row">
+          <span>Tanggal & Waktu</span>
+          <span id="detailDateTime">-</span>
+        </div>
+        <div class="detail-info-row">
+          <span>Sumber Data</span>
+          <span id="detailSource">X / @Merapi_Uncover</span>
+        </div>
+        <div class="detail-info-row">
+          <span>Tingkat Akurasi</span>
+          <span id="detailPrecision" style="text-align: right; font-weight: 600;">ESTIMATED (1200m)</span>
         </div>
 
-        <div class="detail-grid">
-          <div class="detail-mini-card">
-            <span class="mini-card-label">Waktu Kejadian</span>
-            <span class="mini-card-val" id="detailDateTime">-</span>
-          </div>
-          <div class="detail-mini-card">
-            <span class="mini-card-label">Tingkat Akurasi</span>
-            <span class="mini-card-val" id="detailPrecision">HIGH (150m)</span>
-          </div>
-        </div>
-
-        <!-- CUITAN ASLI -->
-        <div class="detail-item">
-          <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Teks Cuitan Warga / Sumber</span>
+        <!-- CUITAN BOX -->
+        <div style="margin-top: 2px;">
+          <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;" id="detailDescLabel">Cuitan</span>
           <div class="incident-quote">
             <p id="detailDesc" class="incident-quote-text"></p>
           </div>
@@ -257,21 +256,21 @@
 
         <!-- FOTO LAPORAN -->
         <section class="incident-media-section" id="detailMediaSection" aria-label="Foto laporan" hidden>
-          <h3 class="incident-media-heading">Foto Rekaman / CCTV</h3>
+          <h3 class="incident-media-heading">Foto laporan</h3>
           <div class="incident-media-grid" id="detailMedia"></div>
         </section>
 
         <!-- PANEL TINDAKAN PETUGAS -->
-        <div class="moderator-box" style="background: rgba(37, 99, 235, 0.05); border: 1px dashed rgba(37, 99, 235, 0.4); border-radius: 10px; padding: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div class="moderator-heading" style="color: #1e40af; font-weight: 700;">Tindakan Moderator</div>
-            <span class="officer-status-tag" style="background: #2563eb; color: white;">Petugas Terverifikasi</span>
+        <div class="moderator-box" style="margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div class="moderator-heading">Tindakan Petugas</div>
+            <span class="officer-status-tag">Petugas Terverifikasi</span>
           </div>
 
           <div class="mod-btn-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button type="button" class="btn-mod btn-mod-verify" id="btnModVerify" onclick="handleAdminModeratorDecision('VERIFIED')" style="background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✓ Verifikasi Laporan</button>
-            <button type="button" class="btn-mod btn-mod-reject" id="btnModReject" onclick="handleAdminModeratorDecision('REJECTED')" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✕ Tandai Hoax</button>
-            <button type="button" class="btn-mod" id="btnModCorrectLoc" onclick="startLocationCorrection()" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">✏️ Koreksi Posisi di Peta</button>
+            <button type="button" class="btn-mod btn-mod-verify" id="btnModVerify" onclick="handleAdminModeratorDecision('VERIFIED')">✓ Verifikasi Laporan</button>
+            <button type="button" class="btn-mod btn-mod-reject" id="btnModReject" onclick="handleAdminModeratorDecision('REJECTED')">✕ Tandai Hoax</button>
+            <button type="button" class="btn-mod" id="btnModCorrectLoc" onclick="startLocationCorrection()" style="background: #0f766e; color: white;">✏️ Koreksi Posisi di Peta</button>
           </div>
 
           <!-- FORM KOREKSI POSISI INTERAKTIF (HUMAN-IN-THE-LOOP & AUTO-LEARN) -->
@@ -295,7 +294,7 @@
         </div>
 
         <!-- COMMENTS / DISKUSI -->
-        <div class="comments-section" style="margin-top: 16px;">
+        <div class="comments-section" style="margin-top: 4px;">
           <div style="font-size: 0.8rem; font-weight: 600; display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span>Laporan & Catatan Situasi Warga</span>
             <span style="font-size: 0.7rem; color: #64748b;">Crowdsourced</span>
